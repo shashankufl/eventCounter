@@ -1,11 +1,13 @@
+/* Binary Counter using Red-Black Tree
+   Created by : Shashank Sharma */
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <map>
+#include <math.h>
 
 using namespace std;
 
-struct node
+struct node // Structure for defining a node in the RedBlack tree
 {
        int id;
        int count;
@@ -15,52 +17,52 @@ struct node
        node *right;
 };
 
-class RBtree
+class RBtree // Class for managing the RedBlack tree and it's functions
 {
       node *root;
-      node *q;
+      int height;
       vector<int> ids;
       vector<int> counts;
    public :
-      RBtree()
+      RBtree() // Constructor initializes a null tree when RBtree class object is created
       {
-              q=NULL;
               root=NULL;
+              height=0;
       }
-      void createBST(char infile[]);
-      node* arrayBST(int start,int end);
-      void initializeRBtree();
-      int insert(int z,int m); // Inserting a node into 'r''b' tree
-      int getIdsInRange(int id1,int id2);
-      int update(int z,int m);
-      void insertfix(node *);
-      void leftrotate(node *);
-      void rightrotate(node *);
-      int del(int x,int cnt); // Deleting a particular node from 'r''b' tree
-      void delfix(node *);
-      void transplant(node* u,node* v);
-      node* successor(node *);
-      void disp();
-      node* getNextNode(int );
-      node* getPrevNode(int );
-      void display( node *);
-      node* search(int );
+      void createBST(char infile[]); // Create input sorted arrays using the dynamically provided input file & initialize the RB tree
+      node* createRedBlackTree(int start,int end,int h); // Create BST(Binary Search Tree)
+      int insert(int z,int m); // insert corresponds to the increase(theID) function
+      void insertfix(node *); // Fix Black Height in the RedBlack tree after an event is inserted
+      int update(int z,int m); // Update the count value for an existing event
+      void leftrotate(node *); // Left rotate at a node in the RedBlack tree
+      void rightrotate(node *); // Right rotate at a node in the RedBlack tree
+      int del(int x,int cnt); // Deleting a node from RedBlack tree
+      void delfix(node *); // Fix Black Height in the RedBlack tree after an event is deleted
+      void transplant(node* u,node* v); // Function to transplant a node to the 2 degree node that's getting deleted
+      node* successor(node *); // Determine successor for a node
+      node* getNextNode(int ); // getNextNode corresponds to the next(theID) function
+      node* getPrevNode(int ); // getPrevNode corresponds to the prev(theID) function
+      node* search(int ); // search function to search an event ID in the RedBlack tree
+      int getIdsInRange(int id1,int id2); // getIdsInRange corresponds to the inrange function
 };
+
 int RBtree::insert(int z,int m)
 {
-     int i;
-     {
      node *p,*q;
      node *t=new node;
      node* temp=search(z);
-     if(temp!=NULL)
+     if(temp!=NULL) // Update if event ID already exists
      {
         if(update(z,m))
         {
            return(temp->count);
         }
      }
-     else
+     else if(m<=0) // Can't insert into tree if event ID doesn't exist & count is <=0
+     {
+         return 0;
+     }
+     else // Insert the event ID & count if event ID doesn't exist in the RedBlack tree and count >0
      {
      t->id=z;
      t->count=m;
@@ -93,28 +95,26 @@ int RBtree::insert(int z,int m)
      insertfix(t);
      return(t->count);
      }
-     }
 }
 
 void RBtree::insertfix(node *t)
 {
     node *parent=t->parent,*grand_parent;
-    while((t!=root)&&(t->color=='r')&&(t->parent->color=='r'))
+    while((t!=root)&&(t->color=='r') && (t->parent->color=='r'))
     {
         parent=t->parent;
         grand_parent=t->parent->parent;
-        /* When parent of t is grand_parent's left child*/
-        if(parent == grand_parent->left)
+        if(parent == grand_parent->left) // When parent of t is grand_parent's left child
         {
             node* uncle=grand_parent->right;
-            if((uncle!=NULL)&&(uncle->color=='r'))
+            if((uncle!=NULL)&&(uncle->color=='r')) // The case where uncle is red
             {
                 grand_parent->color='r';
                 parent->color='b';
                 uncle->color='b';
                 t=grand_parent;
             }
-            else
+            else // The case where uncle is black
             {
                 if(t==parent->right)
                 {
@@ -127,17 +127,17 @@ void RBtree::insertfix(node *t)
                 t=parent;
             }
         }
-        else
+        else // When parent of t is grand_parent's right child
         {
             node* uncle=grand_parent->left;
-            if((uncle!=NULL)&&(uncle->color=='r'))
+            if((uncle!=NULL)&&(uncle->color=='r')) // The case where uncle is red
             {
                 grand_parent->color='r';
                 parent->color='b';
                 uncle->color='b';
                 t=grand_parent;
             }
-            else
+            else // The case where uncle is black
             {
                 if(t==parent->left)
                 {
@@ -176,17 +176,16 @@ void RBtree::transplant(node* u,node* v)
 
 int RBtree::del(int px,int cnt)
 {
-     if(root==NULL)
+     if(root==NULL) // Can't execute reduce(theID) if the root is null
      {
            return 0;
      }
      node* tempNode=search(px);
-     if(tempNode==NULL)
+     if(tempNode==NULL) // Can't execute reduce(theID) if the event doesn't exist
      {
          return 0;
      }
-     //actual RBtree node delete code
-     if(tempNode->count <= cnt)
+     if(tempNode->count <= cnt) // Delete node if the event exists & new count is less than or equal to current event count
      {
          node *y=tempNode,*x;
          char y_originalColor=y->color;
@@ -233,7 +232,7 @@ int RBtree::del(int px,int cnt)
          }
          return(0);
      }
-     else
+     else // Update node if the event exists & new count is more than current event count
      {
         if(update(tempNode->id,(-1)*cnt))
         {
@@ -247,7 +246,7 @@ void RBtree::delfix(node *x)
     node *w;
     while((x!=root)&&(x->color=='b'))
     {
-        if(x==x->parent->left)
+        if(x==x->parent->left) // Considering the left child
         {
             w=x->parent->right;
             if(w->color=='r')
@@ -275,7 +274,7 @@ void RBtree::delfix(node *x)
             leftrotate(x->parent);
             x=root;
         }
-        else
+        else // Considering the right child
         {
             w=x->parent->left;
             if(w->color=='r')
@@ -309,7 +308,7 @@ void RBtree::delfix(node *x)
 
 void RBtree::leftrotate(node *p)
 {
-     if(p->right==NULL)
+     if(p->right==NULL) // Right Rotation not required & not possible if there's no right child
            return ;
      else
      {
@@ -341,7 +340,7 @@ void RBtree::leftrotate(node *p)
 }
 void RBtree::rightrotate(node *p)
 {
-     if(p->left==NULL)
+     if(p->left==NULL) // Left Rotation not required & not possible if there's no left child
           return ;
      else
      {
@@ -375,13 +374,13 @@ void RBtree::rightrotate(node *p)
 node* RBtree::successor(node *p)
 {
      node *y=NULL;
-     if(p->right!=NULL)
+     if(p->right!=NULL) // Determine successor from right node if present
      {
          y=p->right;
          while(y->left!=NULL)
               y=y->left;
      }
-     else if(p->parent!=NULL)
+     else if(p->parent!=NULL) // Determine successor if right node is not present
      {
          if(p==p->parent->left)
          {
@@ -407,52 +406,15 @@ node* RBtree::successor(node *p)
      return y;
 }
 
-void RBtree::disp()
-{
-     display(root);
-}
-void RBtree::display(node *p)
-{
-     if(root==NULL)
-     {
-          cout<<"\nEmpty Tree.";
-          return ;
-     }
-     if(p!=NULL)
-     {
-                cout<<"\n\t NODE: ";
-                cout<<"\n id: "<<p->id;
-                cout<<"\n count: "<<p->count;
-                cout<<"\n Color: ";
-                if(p->color == 'r')
-                    cout<<"'r'";
-                else
-                    cout<<"'b'";
-    if(p->left)
-    {
-                 cout<<"\n\nLeft:\n";
-     display(p->left);
-    }
-    /*else
-     cout<<"\nNo Left Child.\n";*/
-    if(p->right)
-    {
-     cout<<"\n\nRight:\n";
-                 display(p->right);
-    }
-    /*else
-     cout<<"\nNo Right Child.\n"*/
-     }
-}
 node* RBtree::search(int x)
 {
-     if(root==NULL)
+     if(root==NULL) // Event not present if root is null
      {
            return  NULL;
      }
      node *p=root;
      int found=0;
-     while(p!=NULL && found==0)
+     while(p!=NULL && found==0) // Searching down the tree starting from the root
      {
             if(p->id==x)
             {
@@ -478,7 +440,7 @@ int RBtree::update(int z,int m)
      int flag=0;
      while((p!=NULL) && (flag==0))
      {
-            if(p->id==z)
+            if(p->id==z) // If event is found, update it's count value
             {
               p->count = p->count + m;
               flag=1;
@@ -497,7 +459,7 @@ int RBtree::update(int z,int m)
 node* RBtree::getNextNode(int id)
 {
     node *temp =root,*t;
-    if(temp==NULL)
+    if(temp==NULL) // Event not present if root is null
     {
         return NULL;
     }
@@ -527,7 +489,7 @@ node* RBtree::getNextNode(int id)
 node* RBtree::getPrevNode(int id)
 {
     node *temp =root,*t;
-    if(temp==NULL)
+    if(temp==NULL) // Event not present if root is null
     {
         return NULL;
     }
@@ -558,9 +520,13 @@ int RBtree::getIdsInRange(int id1,int id2)
 {
     int sum=0;
     node *t=search(id1);
-    if(t==NULL)
+    if(id1>id2) // Condition that id1 <= id2 isn't satisfied , then return 0 as output
+    {
+        return 0;
+    }
+    if(t==NULL) // Start with id1 if it's present
         t=getNextNode(id1);
-    if(t==NULL)
+    if(t==NULL) // Nothing to display if id1 itself isn't found
         return 0;
     node* current=t;
     while(current!=NULL)
@@ -576,9 +542,9 @@ int RBtree::getIdsInRange(int id1,int id2)
 void RBtree::createBST(char infile[])
 {
     int total_inputs,id,count;
-    ifstream myfile (infile);
+    ifstream myfile (infile); // Read input from file whose name is specified at runtime
     myfile>>total_inputs;
-    for(int i=0;i<total_inputs;i++)
+    for(int i=0;i<total_inputs;i++) // For storing all events & their counts in two different arrays
     {
         myfile>>id>>count;
         ids.push_back(id);
@@ -586,117 +552,107 @@ void RBtree::createBST(char infile[])
         //insert(id,count);
     }
     myfile.close();
-    root=arrayBST(0,ids.size()-1);
+    height = log2(ids.size());
+    root=createRedBlackTree(0,ids.size()-1,0); // Create the Red Black tree using the two arrays above with initial height =0
     root->parent = NULL;
 }
 
-node* RBtree::arrayBST(int start,int end)
+node* RBtree::createRedBlackTree(int start,int end,int h)
 {
+    char setColor;
     if(start>end)
         return NULL;
+    if(h==height)
+        setColor = 'r';
+    else
+        setColor = 'b';
     int mid=(start+end)/2;
     node* root=new node;
     root->id=ids[mid];
-    root->color='b';
+    root->color=setColor;
     root->count=counts[mid];
     node *x=new node,*y=new node;
-    x = arrayBST(start,mid-1);
+    x = createRedBlackTree(start,mid-1,h+1); // Recursively create the left subtree
     root->left = x;
     if(x!=NULL)
         x->parent = root;
-    y = arrayBST(mid+1,end);
+    y = createRedBlackTree(mid+1,end,h+1); // Recursively create the right subtree
     root->right = y;
     if(y!=NULL)
         y->parent = root;
-    if((end-start+1)%2==0)
-    {
-        node *temp = new node;
-        temp=root;
-        while(temp->right!=NULL)
-        {
-            temp=temp->right;
-        }
-        temp->color='r';
-    }
     return root;
 }
 
-void RBtree::initializeRBtree()
-{
-    cout<<root->id<<endl;
-}
 
-
-int main(int argc, char *argv[])
+int main(int argc, char *argv[]) // Obtain arguments specified during runtime
 {
-    int ch,y=0;
-    map<string,int> m;
-    m["increase"]=1;
-    m["reduce"]=2;
-    m["count"]=3;
-    m["inrange"]=4;
-    m["next"]=5;
-    m["previous"]=6;
-    m["display"]=7;
-    m["quit"]=8;
-    RBtree obj;
-    obj.createBST(argv[1]);
-    int id,cnt,id1,id2;
+    int flag=0;
+    RBtree obj; // Object created for the RBtree class for the RedBlack tree
+    obj.createBST(argv[1]); // Call function for RBtree initialization with argv[1] pointing to the input file name
+    int id,cnt,id1,id2; // Variables for taking inputs for a command
     string str;
     node *temp,*t;
     do
     {
-                cin>>str;
-                switch(m[str])
-                {
-                          case 1 : cin>>id>>cnt;
-                                   cnt=obj.insert(id,cnt);
-                                   cout<<cnt<<endl;
-                                    break;
-                          case 2 : cin>>id>>cnt;
-                                   cnt=obj.del(id,cnt);
-                                   cout<<cnt<<endl;
-                                    break;
-                          case 3 :  cin>>id;
-                                    temp=obj.search(id);
-                                       if(temp!=NULL)
-                                       {
-                                           cout<<temp->count<<endl;
-                                       }
-                                       else
-                                       {
-                                           cout<<"0"<<endl;
-                                       }
-                                       break;
-                          case 7 :  obj.disp();
-                                     break;
-                          case 5 :  cin>>id;
-                                   t=obj.getNextNode(id);
-                                   if(t!=NULL)
-                                   {
-                                       cout<<t->id<<" "<<t->count<<endl;
-                                   }
-                                   else
-                                    cout<<"0 0"<<endl;
-                                   break;
-                          case 6 : cin>>id;
-                                   t=obj.getPrevNode(id);
-                                   if(t!=NULL)
-                                   {
-                                       cout<<t->id<<" "<<t->count<<endl;
-                                   }
-                                   else
-                                    cout<<"0 0"<<endl;
-                                   break;
-                          case 4 : cin>>id1>>id2;
-                                   cnt=obj.getIdsInRange(id1,id2);
-                                   cout<<cnt<<endl;
-                                   break;
-                          case 8 : y=1;
-                                   break;
+                cin>>str; // Command Name
+                          if(str=="increase")
+                          {
+                              cin>>id>>cnt;
+                              cnt=obj.insert(id,cnt);
+                              cout<<cnt<<endl;
+                          }
+                          else if(str=="reduce")
+                          {
+                              cin>>id>>cnt;
+                              cnt=obj.del(id,cnt);
+                              cout<<cnt<<endl;
+                          }
+                          else if(str=="count")
+                          {
+                              cin>>id;
+                              temp=obj.search(id);
+                               if(temp!=NULL)
+                               {
+                                   cout<<temp->count<<endl;
+                               }
+                               else
+                               {
+                                   cout<<"0"<<endl;
+                               }
+                          }
+                          else if(str=="next")
+                          {
+                              cin>>id;
+                               t=obj.getNextNode(id);
+                               if(t!=NULL)
+                               {
+                                   cout<<t->id<<" "<<t->count<<endl;
+                               }
+                               else
+                                cout<<"0 0"<<endl;
+                          }
+                          else if(str=="previous")
+                          {
+                              cin>>id;
+                               t=obj.getPrevNode(id);
+                               if(t!=NULL)
+                               {
+                                   cout<<t->id<<" "<<t->count<<endl;
+                               }
+                               else
+                                cout<<"0 0"<<endl;
+                          }
+                          else if(str=="inrange")
+                          {
+                              cin>>id1>>id2;
+                              cnt=obj.getIdsInRange(id1,id2);
+                              cout<<cnt<<endl;
+                          }
+                          else if(str=="quit")
+                          {
+                              flag=1;
+                          }
 
-                          default : cout<<"\nInvalid Command";
-                }
-    }while(y!=1);
+    }while(flag!=1);
     return 1;
 }
